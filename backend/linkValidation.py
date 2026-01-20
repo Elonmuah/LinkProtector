@@ -113,6 +113,7 @@ class CheckURL:
         return False # IP fine
     
     def runTests(self):
+        normalizationResult = self.normalizeURL()
         if self.parseCheckURL() != "OK":
             error_id = f"{int(time.time()*1000)}"
             errorLog.logError({
@@ -120,7 +121,7 @@ class CheckURL:
                 "errorCode": error_id,
                 "URL": self.raw,
                 "time": datetime.now(timezone.utc).isoformat(),
-                "errorType": self.parseCheckURL,
+                "errorType": self.parseCheckURL(),
                 "message": "URL did not check the parsing",
                 "trace": "No trace provided"
             })
@@ -137,7 +138,7 @@ class CheckURL:
                 "errorCode": error_id,
                 "URL": self.raw,
                 "time": datetime.now(timezone.utc).isoformat(),
-                "errorType": self.schemeCheckURL,
+                "errorType": self.schemeCheckURL(),
                 "message": "URL did not check the schemata",
                 "trace": "No trace provided"
             })
@@ -146,22 +147,21 @@ class CheckURL:
                 "errorCode": error_id,
                 "message": self.schemeCheckURL()
                 }
-        
-        elif self.normalizeURL()[0] == "NORMALIZATION_ERROR":
+        elif normalizationResult is not None and normalizationResult[0] == "NORMALIZATION_ERROR":
             return {
                 "error": 1,
-                "errorCode": self.normalizeURL[1],
-                "message": self.normalizeURL()[0]
+                "errorCode": normalizationresult[1],
+                "message": normalizationResult[0]
                 }
         
-        elif self.validateHost != "OK":
+        elif self.validateHost() != "OK":
             error_id = f"{int(time.time()*1000)}"
             errorLog.logError({
                 "error": self.validateHost(),
                 "errorCode": error_id,
                 "URL": self.raw,
                 "time": datetime.now(timezone.utc).isoformat(),
-                "errorType": self.validateHost,
+                "errorType": self.validateHost(),
                 "message": "The provided host, IP or DNS did not check out",
                 "trace": "No trace provided"
             })

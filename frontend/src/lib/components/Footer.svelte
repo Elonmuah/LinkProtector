@@ -4,8 +4,8 @@
 <div class="p-8 pb-12 px-12 sm:px-30 flex flex-col h-full bg-gradient-to-bl from-blue-800 via-slate-950 to-blue-500">
     <div class="flex justify-between flex-row flex-wrap gap-10"> <!--flex-wrap inside app.css (id)-->
         <div>
-            <h2>SwiftFormat</h2>
-            <p>Crafted by you. Perfected by us.</p>
+            <h2>URLock</h2>
+            <p>Lock your links. Protect your clicks.</p>
         </div> <!--Small About-->
         <div class="space-x-3 flex flex-row"> <!--Right follows padding p-8 right-8-->
             <div class="flex flex-col gap-2">
@@ -31,7 +31,7 @@
     <hr class="border-t-2 border-gray-300 my-8">
     <div class="flex flex-row justify-between flex-wrap">
         <div>
-            <p>© 2025 SwiftFormat, Inc. All rights reserved</p>
+            <p>© 2026 URLock, Inc. All rights reserved</p>
         </div> <!--Copyright-->
         <div class="flex flex-row space-x-3"> <!--Right follows padding p-8 right-8-->
             <a href="https://instagram.com" title="Instagram">

@@ -1,0 +1,29 @@
+[
+    {
+        "URL": "http://youtube.com",
+        "error": "HTTP_NOT_ALLOWED_ERROR",
+        "errorCode": "1768939500995",
+        "errorType": "HTTP_NOT_ALLOWED_ERROR",
+        "message": "URL did not check the schemata",
+        "time": "2026-01-20T20:05:00.995939+00:00",
+        "trace": "No trace provided"
+    },
+    {
+        "URL": "http://youtube.com",
+        "error": "HTTP_NOT_ALLOWED_ERROR",
+        "errorCode": "1768939503218",
+        "errorType": "HTTP_NOT_ALLOWED_ERROR",
+        "message": "URL did not check the schemata",
+        "time": "2026-01-20T20:05:03.218042+00:00",
+        "trace": "No trace provided"
+    },
+    {
+        "URL": "http://youtube.com",
+        "error": "HTTP_NOT_ALLOWED_ERROR",
+        "errorCode": "1768939551991",
+        "errorType": "HTTP_NOT_ALLOWED_ERROR",
+        "message": "URL did not check the schemata",
+        "time": "2026-01-20T20:05:51.991803+00:00",
+        "trace": "No trace provided"
+    }
+]

@@ -1,6 +1,7 @@
 <script>
   import * as d3 from "d3";
   import { onMount, onDestroy } from 'svelte';
+  import { API_BASE } from '$lib/env';
 
   let clicksCanvas;
   let selectedTimeframe = "7d";
@@ -95,7 +96,7 @@
 
   const fetchDays = async (tf) => {
     try {
-      const res = await fetch(`http://192.168.2.101:5000/api/${token}/getDays`, {
+      const res = await fetch(`${API_BASE}/api/${token}/getDays`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ timeframe: tf })
@@ -112,7 +113,7 @@
 
   const fetchHours = async () => {
     try {
-      const res = await fetch(`http://192.168.2.101:5000/api/${token}/getHours`, {
+      const res = await fetch(`${API_BASE}/api/${token}/getHours`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ timeframe: "24h" }) // Only current timeframe

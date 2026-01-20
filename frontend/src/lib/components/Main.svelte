@@ -1,13 +1,15 @@
 <script>
+  import { API_BASE } from '$lib/env';
+
   let userInputUrl = "";
   let userinputTitle = "";
   let responseMessage = "";
-  let responseStatus = undefined;
+  let responseStatus = 0;
   let responseErrorCode = null;     // ← moved here + fixed typo + null instead of undefined
 
   async function submitForm() {
     try {
-      const res = await fetch("http://192.168.2.101:5000/api/buttonClick", {
+      const res = await fetch(`${API_BASE}/api/buttonClick`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -21,8 +23,8 @@
       responseStatus = data.error;
       responseMessage = data.message;
 
-      if (data.errorCode) {
-        responseErrorCode = data.errorCode;    // ← no 'let' here!
+      if (responseStatus === 1) {
+        responseErrorCode = data.errorCode;
       } else {
         responseErrorCode = null;
       }
@@ -99,23 +101,12 @@
   <div class="mt-6 w-full max-w-md transition-all duration-300">
     {#if responseStatus === 0}
       <!-- Success state -->
-      <div class="p-5 bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-700/50 rounded-xl shadow-lg shadow-emerald-900/20 animate-fade-in">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-emerald-300">Success!</h3>
-        </div>
-        <p class="text-gray-300 leading-relaxed">{responseMessage}</p>
         
         {#if responseMessage.includes('Your protected url')}
           <div class="mt-4 p-3 bg-black/30 rounded-lg border border-emerald-800/50 font-mono text-sm text-emerald-200 break-all">
             {responseMessage.split(': ')[1] || responseMessage}
           </div>
         {/if}
-      </div>
     {:else}
       <!-- Error state -->
       <div class="p-5 bg-gradient-to-r from-red-900/40 to-rose-900/40 border border-red-700/50 rounded-xl shadow-lg shadow-red-900/20 animate-fade-in">
@@ -130,11 +121,10 @@
         
         <p class="text-gray-300 mb-3">{responseMessage || "An unexpected error occurred."}</p>
         
-        {#if reponseErrorCode}
+        {#if responseErrorCode}
           <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-red-950/60 rounded-md text-sm text-red-300 border border-red-800/50">
-            <span class="font-mono">Error code: {reponseErrorCode}</span>
+            <span class="font-mono">Error code: {responseErrorCode}</span>
           </div>
-        {/if}
         
         <p class="mt-4 text-sm text-gray-400">
           Please contact our 
@@ -143,6 +133,7 @@
           </a>
           with the error details above.
         </p>
+        {/if}
       </div>
     {/if}
   </div>
@@ -152,28 +143,28 @@
   <div class="pt-12 flex flex-wrap gap-10 justify-center max-w-6xl" id="wrapit">
     <div class="w-80 text-justify">
       <h2 class="pb-3 text-3xl md:text-4xl">
-        <strong class="text-red-500 font-semibold drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]">F</strong>ree
+        <strong class="text-red-500 font-semibold drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]">P</strong>rotect
       </h2>
       <p class="text-gray-300">
-        Build your professional résumé without limits. No paywalls, no hidden catches — just powerful tools that let you design, customize, and download your résumé for free. Focus on your career, not your credit card.
+        Keep every link you share fully protected from hijackers and malicious actors. No complicated setup, no hidden fees — just a powerful system that automatically shields your URLs so your users can click safely. Focus on sharing, not worrying about attacks.
       </p>
     </div>
 
     <div class="w-80 text-justify">
       <h2 class="pb-3 text-3xl md:text-4xl">
-        <strong class="text-red-500 font-semibold drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]">F</strong>ast
+        <strong class="text-red-500 font-semibold drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]">P</strong>revent
       </h2>
       <p class="text-gray-300">
-        From start to finish in minutes. Our intuitive builder helps you generate, edit, and polish your résumé in real-time — no loading screens, no wasted effort. Just instant results that move as quickly as you do.
+        Stop malicious redirects and link tampering before they ever happen. No confusing security rules, no unnecessary restrictions — just intelligent, automated protection that prevents hijacks in real time. Focus on your content, not cyber threats.
       </p>
     </div>
 
     <div class="w-80 text-justify">
       <h2 class="pb-3 text-3xl md:text-4xl">
-        <strong class="text-red-500 font-semibold drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]">F</strong>ormatted
+        <strong class="text-red-500 font-semibold drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]">P</strong>reserve
       </h2>
       <p class="text-gray-300">
-        Your résumé, perfectly aligned every time. With smart templates and adaptive layouts, every section looks clean, consistent, and ready for recruiters. Designed for precision — because presentation matters.
+        Maintain the integrity, trust, and reliability of every link you share. No interruptions, no broken redirects — just a system that ensures your users always reach exactly where you intended. Focus on growing your audience, not fixing problems.
       </p>
     </div>
   </div>

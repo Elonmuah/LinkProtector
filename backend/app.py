@@ -3,7 +3,7 @@ from flask_cors import CORS
 import LPE
 import json
 from datetime import datetime, timezone, timedelta
-import linkValidation
+from linkValidation import CheckURL
 import sqlite3
 
 app = Flask(__name__)
@@ -16,6 +16,59 @@ def get_db():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
+
+def init_db():
+    """Create all tables if they don't exist (safe to call multiple times)"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS links (
+                token           TEXT PRIMARY KEY,
+                original_url    TEXT NOT NULL,
+                title           TEXT NOT NULL,
+                tokenized_url   TEXT NOT NULL,
+                created_at      TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
+                last_id         INTEGER
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS clicks (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                token       TEXT NOT NULL,
+                click_time  TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
+                hour        INTEGER NOT NULL CHECK(hour BETWEEN 0 AND 23),
+                FOREIGN KEY (token) REFERENCES links(token) ON DELETE CASCADE
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS daily_stats (
+                token       TEXT NOT NULL,
+                date        TEXT NOT NULL,
+                total_clicks INTEGER DEFAULT 0,
+                PRIMARY KEY (token, date),
+                FOREIGN KEY (token) REFERENCES links(token) ON DELETE CASCADE
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS hourly_stats (
+                token       TEXT NOT NULL,
+                date        TEXT NOT NULL,
+                hour        INTEGER NOT NULL CHECK(hour BETWEEN 0 AND 23),
+                clicks      INTEGER DEFAULT 0,
+                PRIMARY KEY (token, date, hour),
+                FOREIGN KEY (token) REFERENCES links(token) ON DELETE CASCADE
+            )
+        """)
+
+        conn.commit()
+
+
+# Run DB initialization once on startup
+init_db()
 
 def safeData(data):
     with open("DB.json", "w") as f:
@@ -73,14 +126,15 @@ def buttonClick():
     title = data.get("title", "").strip()
 
     # Validation
-    tested = linkValidation(url).runTests()
-    if tested.error == 1:
-        return jsonify({"message": tested.message, "error": 1, "errorCode": tested.errorCode})
+    testedurl = CheckURL(url)
+    tested = testedurl.runTests()
+    if tested["error"] == 1:
+        return jsonify({"message": tested["message"], "error": 1, "errorCode": tested["errorCode"]})
 
     protector = LPE.linkProtector(url, title)
     token = protector.token
     tokenized_url = protector.getTokenizedLink().replace(" ", "-")
-
+    
     with get_db() as conn:
         cursor = conn.cursor()
 
@@ -97,11 +151,12 @@ def buttonClick():
         """, (token, url, title, tokenized_url))
 
         conn.commit()
-
+    
     return jsonify({
         "message": f"Your protected url: {tokenized_url}",
         "error": 0
     })
+    
 
 @app.get("/<title>/<token>")
 def redirect302(title, token):

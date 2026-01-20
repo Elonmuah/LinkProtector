@@ -1,5 +1,6 @@
 <script>
   import { onMount } from "svelte";
+  import { API_BASE } from '$lib/env';
 
   let message = "";
   let noUserURLs = false;
@@ -7,7 +8,7 @@
 
   onMount(async () => {
   try {
-    const res = await fetch("http://192.168.2.101:5000/api/getUserUrls", {
+    const res = await fetch(`${API_BASE}/api/getUserUrls`, {
       method: "POST"
     });
     const data = await res.json();
