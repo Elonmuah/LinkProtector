@@ -1,0 +1,351 @@
+<script>
+  import * as d3 from "d3";
+  import { onMount } from 'svelte';
+  // Backend will handle later calculations!
+  let clicksCanvas;
+  let svg;
+  let selectedTimeframe = "7d";
+  let clicksData = {};
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+
+  const timeframes = [
+    { value: "24h", label: "Last 24 Hours" },
+    { value: "7d",  label: "Last 7 Days" },
+    { value: "30d", label: "Last 30 Days" },
+    { value: "90d", label: "Last 90 Days" },
+    { value: "all", label: "All Time" }
+  ];
+
+  onMount(() => {
+    fetchClicks(selectedTimeframe);
+  });
+
+  function selectTimeframe(tf) {
+    selectedTimeframe = tf;
+    console.log(selectedTimeframe);
+    fetchClicks(tf);
+  }
+
+  const fetchClicks = async (tf) => {
+    if (tf === "24h") {
+        //clicksData = fetchHours();
+    } else {
+        const data = await fetchDays(tf);
+        const keyValuePairs = data.dateDaysDictionary
+        let x = Object.keys(keyValuePairs);
+        let y = Object.values(keyValuePairs);
+        makeChart(x, y);
+    }
+  }
+
+  const fetchHours = async (tf) => {
+    const res = await fetch(`http://192.168.2.101:5000/api/${token}/getHours`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({timeframe: tf})
+    });
+    const data = await res.json();
+    return data;
+  }
+
+  const fetchDays = async (tf) => {
+    const res = await fetch(`http://192.168.2.101:5000/api/${token}/getDays`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({timeframe: tf})
+    });
+    const data = await res.json();
+    return data;
+  }
+
+  let chartInstance;
+
+function makeChart(x, y) {
+  // === Clean up old chart ===
+  const container = document.getElementById("clicksCanvas");
+  d3.select(container).selectAll("*").remove();
+
+  // === Data prep ===
+  const yNums = y.map(v => Number(v) || 0);
+  const parseDate = d3.timeParse("%Y-%m-%d");
+  const dates = x.map(d => parseDate(d)).filter(d => d); // safety
+
+  if (dates.length === 0) {
+    const svg = d3.select(container)
+      .append("svg")
+      .attr("width", "100%")
+      .attr("height", "420")
+      .attr("viewBox", `0 0 800 420`);
+
+    svg.append("text")
+      .attr("x", "50%")
+      .attr("y", "50%")
+      .attr("text-anchor", "middle")
+      .attr("fill", "#64748b")
+      .attr("font-size", "20")
+      .text("No click data yet");
+
+    return;
+  }
+
+  // === Dimensions & Margins ===
+  const width = container.clientWidth || 800;
+  const height = 480;
+  const margin = { top: 30, right: 30, bottom: 80, left: 70 };
+
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+
+  // === SVG Setup ===
+  const svg = d3.select(container)
+    .append("svg")
+    .attr("width", "100%")
+    .attr("height", height)
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("preserveAspectRatio", "xMidYMid meet");
+
+  const g = svg.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  // === Scales ===
+  const xScale = d3.scaleTime()
+    .domain(d3.extent(dates))
+    .range([0, innerWidth]);
+
+  const maxY = Math.max(5, d3.max(yNums)); // min height so chart doesn't collapse
+  const yScale = d3.scaleLinear()
+    .domain([0, maxY])
+    .nice()
+    .range([innerHeight, 0]);
+
+  // === Area + Line ===
+  const area = d3.area()
+    .x((d, i) => xScale(dates[i]))
+    .y0(innerHeight)
+    .y1((d, i) => yScale(yNums[i]))
+    .curve(d3.curveMonotoneX);
+
+  const line = d3.line()
+    .x((d, i) => xScale(dates[i]))
+    .y((d, i) => yScale(yNums[i]))
+    .curve(d3.curveMonotoneX);
+
+  // Gradient definition
+  const gradient = g.append("defs")
+    .append("linearGradient")
+    .attr("id", "areaGradient")
+    .attr("x1", "0%").attr("y1", "0%")
+    .attr("x2", "0%").attr("y2", "100%");
+
+  gradient.append("stop").attr("offset", "0%").attr("stop-color", "#a78bfa").attr("stop-opacity", 0.25);
+  gradient.append("stop").attr("offset", "100%").attr("stop-color", "#a78bfa").attr("stop-opacity", 0);
+
+  // Draw area
+  g.append("path")
+    .datum(yNums)
+    .attr("fill", "url(#areaGradient)")
+    .attr("d", area);
+
+  // Draw line
+  g.append("path")
+    .datum(yNums)
+    .attr("fill", "none")
+    .attr("stroke", "#a78bfa")
+    .attr("stroke-width", 3.5)
+    .attr("stroke-linecap", "round")
+    .attr("d", line);
+
+  // Glowing points on hover (optional but sexy)
+  const points = g.selectAll(".point")
+    .data(yNums)
+    .enter()
+    .append("circle")
+    .attr("cx", (_, i) => xScale(dates[i]))
+    .attr("cy", d => yScale(d))
+    .attr("r", 0)
+    .attr("fill", "#c4b5fd")
+    .attr("stroke", "#1e1b4b")
+    .attr("stroke-width", 3)
+    .style("opacity", 0);
+
+  // === Axes ===
+  const xAxis = d3.axisBottom(xScale)
+    .ticks(Math.min(8, dates.length))
+    .tickFormat(d3.timeFormat("%b %d"));
+
+  g.append("g")
+    .attr("transform", `translate(0,${innerHeight}))`)
+    .call(xAxis)
+    .call(g => g.select(".domain").remove())
+    .call(g => g.selectAll(".tick line").remove())
+    .call(g => g.selectAll("text")
+      .attr("fill", "#94a3b8")
+      .attr("font-size", "13")
+      .attr("dy", "12")
+      .attr("transform", "rotate(-40)")
+      .style("text-anchor", "end"));
+
+  const yAxis = d3.axisLeft(yScale)
+    .ticks(6)
+    .tickFormat(d3.format("d"));
+
+  g.append("g")
+    .call(yAxis)
+    .call(g => g.select(".domain").attr("stroke", "#334155"))
+    .call(g => g.selectAll(".tick line")
+      .attr("stroke", "#334155")
+      .attr("stroke-opacity", 0.4))
+    .call(g => g.selectAll("text")
+      .attr("fill", "#cbd5e1")
+      .attr("font-size", "14"));
+
+  // Subtle grid
+  g.append("g")
+    .attr("class", "grid")
+    .call(d3.axisLeft(yScale)
+      .ticks(6)
+      .tickSize(-innerWidth)
+      .tickFormat("")
+    )
+    .attr("stroke", "#1e293b")
+    .attr("stroke-opacity", 0.6);
+
+  // === Tooltip ===
+  const tooltip = g.append("g")
+    .attr("class", "tooltip")
+    .style("pointer-events", "none")
+    .style("opacity", 0);
+
+  tooltip.append("rect")
+    .attr("width", 130)
+    .attr("height", 36)
+    .attr("x", 10)
+    .attr("y", -46)
+    .attr("rx", 12)
+    .attr("fill", "#0f172a")
+    .attr("stroke", "#6366f1")
+    .attr("stroke-width", 1.5)
+    .attr("opacity", 0.95);
+
+  const tooltipText = tooltip.append("text")
+    .attr("x", 18)
+    .attr("y", -24)
+    .attr("fill", "#e0e7ff")
+    .attr("font-size", "13")
+    .attr("font-weight", "600");
+
+  // Hover overlay
+  svg.append("rect")
+    .attr("x", margin.left)
+    .attr("y", margin.top)
+    .attr("width", innerWidth)
+    .attr("height", innerHeight)
+    .attr("fill", "transparent")
+    .style("cursor", "crosshair")
+    .on("mouseover", () => tooltip.style("opacity", 1))
+    .on("mouseout", () => {
+      tooltip.style("opacity", 0);
+      points.attr("r", 0).style("opacity", 0);
+    })
+    .on("mousemove", function(event) {
+      const [mx] = d3.pointer(event, this);
+      const x0 = xScale.invert(mx);
+      const i = d3.bisector(d => d).left(dates, x0, 1);
+      const idx = Math.max(0, Math.min(i - 1, dates.length - 1));
+
+      const d = dates[idx];
+      const val = yNums[idx];
+
+      const tx = xScale(d);
+      const ty = yScale(val);
+
+      tooltip.attr("transform", `translate(${tx},${ty})`);
+      tooltipText.text(`${d3.timeFormat("%b %d")(d)} — ${val} clicks`);
+
+      // Glow point
+      points
+        .attr("r", d => d === val ? 7 : 0)
+        .style("opacity", d => d === val ? 1 : 0);
+    });
+}
+
+</script>
+
+<!--
+<!-- Same perfect site padding as every other page -->
+<section class="w-full min-h-screen py-16 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="text-center mb-16">
+      <h1 class="text-5xl md:text-6xl font-bold text-white mb-4">
+        Clicks Over Time
+      </h1>
+      <p class="text-xl text-slate-400">
+        Track every single click across all timeframes
+      </p>
+    </div>
+
+    <!-- Timeframe Selector (same style as before) -->
+    <div class="flex justify-center mb-12">
+      <div class="inline-flex bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-2 shadow-2xl">
+        {#each timeframes as { value, label }}
+            <button
+            on:click={() => selectTimeframe(value)}
+            class="px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300
+                    {selectedTimeframe === value
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-lg shadow-purple-500/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'}"
+            >
+            {label}
+            </button>
+        {/each}
+      </div>  
+    </div>
+
+    <!-- Main Chart Area – Huge & Gorgeous -->
+    <div class="bg-slate-800/70 backdrop-blur-xl border border-slate-700/50 
+                rounded-3xl p-8 md:p-12 shadow-3xl shadow-slate-950/60
+                min-h-[600px] flex items-center justify-center">
+      
+      <div class="text-center">
+        <!-- Placeholder that looks premium -->
+        <div class="w-full max-w-5xl mx-auto">
+          <div class="space-y-8">
+            <div id="clicksCanvas"></div>
+            
+            <!-- Mini stats preview -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
+              {#each [
+                { label: "Total Clicks", value: "48,291", change: "+12.4%" },
+                { label: "This Week", value: "8,420", change: "+28.1%" },
+                { label: "Peak Day", value: "3,892", change: "Tue" },
+                { label: "Avg. Daily", value: "1,204", change: "+5.9%" }
+              ] as stat}
+                <div class="text-center">
+                  <p class="text-slate-500 text-sm">{stat.label}</p>
+                  <p class="text-3xl font-bold text-white mt-2">{stat.value}</p>
+                  <p class="text-sm {stat.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'} mt-1">
+                    {stat.change}
+                  </p>
+                </div>
+              {/each}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Back button -->
+    <div class="mt-12 text-center">
+      <a href="/analytics" class="inline-flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Dashboard
+      </a>
+    </div>
+
+  </div>
+</section>
