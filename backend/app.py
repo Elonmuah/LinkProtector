@@ -27,6 +27,7 @@ def init_db():
                 token           TEXT PRIMARY KEY,
                 original_url    TEXT NOT NULL,
                 title           TEXT NOT NULL,
+                host            TEXT NOT NULL,
                 tokenized_url   TEXT NOT NULL,
                 created_at      TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
                 last_id         INTEGER
@@ -74,16 +75,16 @@ def safeData(data):
     with open("DB.json", "w") as f:
         json.dump(data, f, indent=4, sort_keys=True)
 
-# ── Validate token + title match ──────────────────────────────────────────────────
-def validate(token, title):
+# ── Validate token + host match ──────────────────────────────────────────────────
+def validate(token, host):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT title FROM links WHERE token = ?",
+            "SELECT host FROM links WHERE token = ?",
             (token,)
         )
         row = cursor.fetchone()
-        return row is not None and row['title'].lower() == title.lower()
+        return row is not None and row['host'].lower() == host.lower()
 
 def addClick(token):
     now = datetime.now(timezone.utc)
@@ -123,7 +124,6 @@ def addClick(token):
 def buttonClick():
     data = request.get_json()
     url = data.get("url")
-    title = data.get("title", "").strip()
 
     # Validation
     testedurl = CheckURL(url)
@@ -131,9 +131,10 @@ def buttonClick():
     if tested["error"] == 1:
         return jsonify({"message": tested["message"], "error": 1, "errorCode": tested["errorCode"]})
 
-    protector = LPE.linkProtector(url, title)
+    protector = LPE.Tokenize(url)
     token = protector.token
     tokenized_url = protector.getTokenizedLink().replace(" ", "-")
+    host = protector.getHost()
     
     with get_db() as conn:
         cursor = conn.cursor()
@@ -144,11 +145,11 @@ def buttonClick():
             return jsonify({"message": "Token collision - try again", "error": 1})
 
         cursor.execute("""
-            INSERT INTO links (token, original_url, title, tokenized_url, last_id)
+            INSERT INTO links (token, original_url, host, tokenized_url, last_id)
             VALUES (?, ?, ?, ?, 
                 (SELECT COALESCE(MAX(last_id), 0) + 1 FROM links)
             )
-        """, (token, url, title, tokenized_url))
+        """, (token, url, host, tokenized_url))
 
         conn.commit()
     
@@ -158,9 +159,9 @@ def buttonClick():
     })
     
 
-@app.get("/<title>/<token>")
-def redirect302(title, token):
-    if not validate(token, title):
+@app.get("/affiliate/<host>/<token>")
+def redirect302(host, token):
+    if not validate(token, host):
         abort(404)
 
     # Get original URL
@@ -182,7 +183,7 @@ def getUserUrls():
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT token, title, tokenized_url AS originalUrl, last_id AS ID
+            SELECT token, host, tokenized_url AS originalUrl, last_id AS ID
             FROM links
             ORDER BY last_id DESC
         """)
@@ -195,7 +196,7 @@ def getUserUrls():
         "tokens": [r['token'] for r in rows],
         "IDs": [r['ID'] for r in rows],
         "URLs": [r['originalUrl'] for r in rows],
-        "titles": [r['title'] for r in rows],
+        "hosts": [r['host'] for r in rows],
         "error": 0
     }
     return jsonify(result)

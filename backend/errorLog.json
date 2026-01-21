@@ -25,5 +25,14 @@
         "message": "URL did not check the schemata",
         "time": "2026-01-20T20:05:51.991803+00:00",
         "trace": "No trace provided"
+    },
+    {
+        "URL": "http://youtube.com",
+        "error": "HTTP_NOT_ALLOWED_ERROR",
+        "errorCode": "1768992978310",
+        "errorType": "HTTP_NOT_ALLOWED_ERROR",
+        "message": "URL did not check the schemata",
+        "time": "2026-01-21T10:56:18.310093+00:00",
+        "trace": "No trace provided"
     }
 ]

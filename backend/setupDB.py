@@ -18,6 +18,7 @@ def create_tables():
             token           TEXT PRIMARY KEY,
             original_url    TEXT NOT NULL,
             title           TEXT NOT NULL,
+            host            TEXT NOT NULL,
             tokenized_url   TEXT NOT NULL,
             created_at      TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
             last_id         INTEGER

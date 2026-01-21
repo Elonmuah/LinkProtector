@@ -22,7 +22,7 @@
       userData = data.IDs.map((id, i) => ({
         ID: id,
         URL: data.URLs[i],
-        title: data.titles[i].replace(" ", "-") || `URL ${id}`,
+        host: data.hosts[i].replace(" ", "-") || `URL ${id}`,
         token: data.tokens[i]
       }));
     }
@@ -67,7 +67,7 @@
 
             <div class="space-y-6">
               <h2 class="text-2xl font-bold text-white leading-tight">
-                {data.title}
+                {data.host}
               </h2>
 
               <p class="text-slate-400">
@@ -79,7 +79,7 @@
             </div>
 
             <div class="mt-8">
-              <a href="/analytics/{encodeURIComponent(data.title)}?token={data.token}">
+              <a href="/analytics/{encodeURIComponent(data.host)}?token={data.token}">
                 <button class="w-full py-4 px-8 bg-gradient-to-r from-indigo-600 to-purple-700 
                                 text-white font-semibold rounded-xl shadow-lg
                                 hover:shadow-indigo-500/30 hover:scale-105 

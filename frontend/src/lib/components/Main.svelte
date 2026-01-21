@@ -2,7 +2,6 @@
   import { API_BASE } from '$lib/env';
 
   let userInputUrl = "";
-  let userinputTitle = "";
   let responseMessage = "";
   let responseStatus = 0;
   let responseErrorCode = null;     // ← moved here + fixed typo + null instead of undefined
@@ -14,7 +13,6 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url: userInputUrl,
-          title: userinputTitle
         })
       });
 
@@ -66,7 +64,7 @@
   
 
   <!-- Creator Name Input, Should be title later on with real Databank, maybe try earlier too -->
-  <input
+  <!--<input
     type="text"
     placeholder="Your Title For Your URL"
     bind:value={userinputTitle}
@@ -75,7 +73,7 @@
              text-gray-200 placeholder-gray-400
              focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 
              outline-none transition-all"
-  />
+  /> -->
   </div>
 
   <!-- Button -->
