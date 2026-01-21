@@ -150,7 +150,7 @@ class CheckURL:
         elif normalizationResult is not None and normalizationResult[0] == "NORMALIZATION_ERROR":
             return {
                 "error": 1,
-                "errorCode": normalizationresult[1],
+                "errorCode": normalizationResult[1],
                 "message": normalizationResult[0]
                 }
         

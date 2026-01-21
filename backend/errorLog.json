@@ -34,5 +34,38 @@
         "message": "URL did not check the schemata",
         "time": "2026-01-21T10:56:18.310093+00:00",
         "trace": "No trace provided"
+    },
+    {
+        "URL": "htt",
+        "error": "NORMALIZATION_ERROR",
+        "errorCode": "1769033289941",
+        "errorType": [
+            "NORMALIZATION_ERROR with type:",
+            "AttributeError"
+        ],
+        "message": [
+            "URL was not normalized due to error:",
+            "'NoneType' object has no attribute 'lower'"
+        ],
+        "time": "2026-01-21T22:08:09.941638+00:00",
+        "trace": "Traceback (most recent call last):\n  File \"C:\\Users\\Leonard\\Documents\\Projects\\LinkProtector\\backend\\linkValidation.py\", line 39, in normalizeURL\n    host = self.parsed.hostname.lower()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'lower'\n"
+    },
+    {
+        "URL": "htt",
+        "error": "INVALID_URL_ERROR",
+        "errorCode": "1769033289947",
+        "errorType": "INVALID_URL_ERROR",
+        "message": "URL did not check the parsing",
+        "time": "2026-01-21T22:08:09.947451+00:00",
+        "trace": "No trace provided"
+    },
+    {
+        "URL": "https://localhost:8080",
+        "error": "HOSTNAME_NOT_ALLOWED_ERROR",
+        "errorCode": "1769033314400",
+        "errorType": "HOSTNAME_NOT_ALLOWED_ERROR",
+        "message": "The provided host, IP or DNS did not check out",
+        "time": "2026-01-21T22:08:34.400086+00:00",
+        "trace": "No trace provided"
     }
 ]

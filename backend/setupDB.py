@@ -17,7 +17,6 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS links (
             token           TEXT PRIMARY KEY,
             original_url    TEXT NOT NULL,
-            title           TEXT NOT NULL,
             host            TEXT NOT NULL,
             tokenized_url   TEXT NOT NULL,
             created_at      TEXT NOT NULL DEFAULT (datetime('now', 'utc')),

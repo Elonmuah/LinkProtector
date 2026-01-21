@@ -19,6 +19,20 @@
     { value: "90d", label: "90d" },
     { value: "all", label: "All" }
   ];
+  // Convert UTC date string to local date string (YYYY-MM-DD in user's timezone)
+  function utcToLocalDate(utcDateStr) {
+    // Parse as UTC
+    const utcDate = new Date(utcDateStr + 'T00:00:00Z');
+    // Get local YYYY-MM-DD
+    return utcDate.toLocaleDateString('en-CA', {
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+  }
+
+  // Get today's date in user's local timezone (YYYY-MM-DD)
+  function getTodayLocal() {
+    return new Date().toLocaleDateString('en-CA');
+  }
 
   onMount(() => {
     fetchClicks(selectedTimeframe);
@@ -49,7 +63,7 @@
   // The only and correct fetchClicks function
   async function fetchClicks(tf) {
     isLoading = true;
-    chartOpacity = 0.4; // fade out effect
+    chartOpacity = 0.4;
     await new Promise(resolve => setTimeout(resolve, 300));
 
     let x = [];
@@ -60,16 +74,61 @@
       if (tf === "24h") {
         const data = await fetchHours();
         const hourlyDict = data.hourlyData || {};
-        x = Object.keys(hourlyDict).sort(); // chronological order
+        x = Object.keys(hourlyDict).sort();
         y = Object.values(hourlyDict);
         isHourly = true;
       } else {
-        const data = await fetchDays(tf);
-        const dict = data.dateDaysDictionary || {};
-        x = Object.keys(dict).sort();
-        y = Object.values(dict);
-        isHourly = false;
-      }
+  const data = await fetchDays(tf);
+  const dictUTC = data.dateDaysDictionary || {};
+
+  if (Object.keys(dictUTC).length === 0) {
+    showNoData();
+    return;
+  }
+
+  // 1. Convert UTC dates → local dates and aggregate (rare overlap, but safe)
+  const dictLocal = {};
+  for (const [utcDate, value] of Object.entries(dictUTC)) {
+    const localDate = utcToLocalDate(utcDate);
+    dictLocal[localDate] = (dictLocal[localDate] || 0) + Number(value);
+  }
+
+  // 2. Sort local dates
+  const entries = Object.entries(dictLocal);
+  entries.sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
+  // 3. Get local today
+  const todayLocalStr = getTodayLocal();
+
+  // 4. Fill from first local date to today local
+  const filledX = [];
+  const filledY = [];
+
+  let startLocal = entries.length > 0 ? new Date(entries[0][0]) : new Date(todayLocalStr);
+  startLocal.setHours(0, 0, 0, 0);
+
+  let current = new Date(startLocal);
+  const localMap = new Map(entries);
+
+  while (current.toLocaleDateString('en-CA') <= todayLocalStr) {
+    const dateStr = current.toLocaleDateString('en-CA');
+    filledX.push(dateStr);
+    filledY.push(localMap.get(dateStr) || 0);
+    current.setDate(current.getDate() + 1);
+  }
+
+  x = filledX;
+  y = filledY;
+  isHourly = false;
+
+  // Debug
+  console.log("Daily chart (local time):", {
+    range: `${x[0]} → ${x[x.length - 1]}`,
+    todayLocal: todayLocalStr,
+    clicksTodayLocal: y[y.length - 1],
+    rawUTCData: dictUTC
+  });
+}
 
       if (x.length === 0) {
         showNoData();
@@ -81,7 +140,7 @@
       showNoData();
     } finally {
       isLoading = false;
-      chartOpacity = 1; // fade in
+      chartOpacity = 1;
     }
   }
 

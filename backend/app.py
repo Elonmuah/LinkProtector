@@ -27,7 +27,6 @@ def init_db():
             CREATE TABLE IF NOT EXISTS links (
                 token           TEXT PRIMARY KEY,
                 original_url    TEXT NOT NULL,
-                title           TEXT NOT NULL,
                 host            TEXT NOT NULL,
                 tokenized_url   TEXT NOT NULL,
                 created_at      TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
@@ -231,7 +230,6 @@ def getHours(token):
 
     return jsonify({"hourlyData": dict(sorted(hourlyData.items()))})
 
-# ── Daily stats ───────────────────────────────────────────────────────────────────
 @app.post("/api/<token>/getDays")
 def getDays(token):
     parsed = request.get_json() or {}
@@ -248,25 +246,47 @@ def getDays(token):
     with get_db() as conn:
         cursor = conn.cursor()
 
+        today_utc = datetime.now(timezone.utc).date()
+        today_str = today_utc.isoformat()
+
+        # Always ensure today's UTC date exists (even with 0 clicks)
+        cursor.execute("""
+            INSERT OR IGNORE INTO daily_stats (token, date, total_clicks)
+            VALUES (?, ?, 0)
+        """, (token, today_str))
+
+        # If limited timeframe: fill the last N days (including today)
+        if days_limit is not None:
+            for i in range(days_limit + 1):  # +1 includes today
+                day = today_utc - timedelta(days=i)
+                date_str = day.isoformat()
+                cursor.execute("""
+                    INSERT OR IGNORE INTO daily_stats (token, date, total_clicks)
+                    VALUES (?, ?, 0)
+                """, (token, date_str))
+
+        # Query the data
         if days_limit is None:
             cursor.execute("""
-                SELECT date, total_clicks 
-                FROM daily_stats 
-                WHERE token = ? 
+                SELECT date, total_clicks
+                FROM daily_stats
+                WHERE token = ?
                 ORDER BY date ASC
             """, (token,))
         else:
-            cutoff = (datetime.now(timezone.utc).date() - timedelta(days=days_limit)).isoformat()
+            cutoff = (today_utc - timedelta(days=days_limit)).isoformat()
             cursor.execute("""
-                SELECT date, total_clicks 
-                FROM daily_stats 
+                SELECT date, total_clicks
+                FROM daily_stats
                 WHERE token = ? AND date >= ?
                 ORDER BY date ASC
             """, (token, cutoff))
 
         rows = cursor.fetchall()
 
+    # Build dictionary (already sorted by query)
     dateDaysDictionary = {r['date']: r['total_clicks'] for r in rows}
+
     return jsonify({"dateDaysDictionary": dateDaysDictionary})
 
 

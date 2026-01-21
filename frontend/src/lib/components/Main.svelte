@@ -1,5 +1,6 @@
 <script>
   import { API_BASE } from '$lib/env';
+  import HelpTool from '$lib/components/HelpTool.svelte';
 
   let userInputUrl = "";
   let responseMessage = "";
@@ -48,19 +49,33 @@
   </div>
 
   <!--Input fields-->
+  <!-- URL Input with Help Tooltip on the right -->
   <div class="mt-10 w-full max-w-md flex flex-col gap-4 text-left">
-
-  <!-- URL Input -->
+    <div class="relative flex items-center gap-3">
   <input
     type="text"
-    placeholder="Your Affilate URL"
+    placeholder="Your Affiliate URL"
     bind:value={userInputUrl}
-    class="w-full px-6 py-4 text-lg rounded-xl 
-             bg-white/10 border border-gray-700 
-             text-gray-200 placeholder-gray-400
-             focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 
-             outline-none transition-all"
+    class="flex-1 px-6 py-4 text-lg rounded-xl
+           bg-white/10 border border-gray-700
+           text-gray-200 placeholder-gray-400
+           focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400
+           outline-none transition-all"
   />
+
+  <!-- Icon on right → text appears on LEFT -->
+  <HelpTool
+    text="Paste your original affiliate link here (e.g. Amazon, eBay, Shopify with your tag). We will protect it from being replaced by browser extensions like Honey."
+    position="right"       
+    textposition="left"    
+    size="xl"
+    icon="❓"
+  />
+</div>
+
+    <!-- Optional title input (commented out in your code) -->
+    <!-- <input type="text" placeholder="Your Title For Your URL" ... /> -->
+  </div>
   
 
   <!-- Creator Name Input, Should be title later on with real Databank, maybe try earlier too -->
@@ -74,7 +89,6 @@
              focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 
              outline-none transition-all"
   /> -->
-  </div>
 
   <!-- Button -->
   <div class="mt-4">
