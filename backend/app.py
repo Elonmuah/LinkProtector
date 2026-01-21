@@ -17,6 +17,7 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db():
     """Create all tables if they don't exist (safe to call multiple times)"""
     with get_db() as conn:
