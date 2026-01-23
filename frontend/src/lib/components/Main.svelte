@@ -44,7 +44,7 @@
          drop-shadow-[0_0_10px_rgba(99,102,241,0.6)] animate-fadeIn
          leading-[1.2] pb-2 overflow-visible"
     >
-      Crafted by you.<br />Perfected by us.
+      Lock your links.<br />Protect your clicks.
     </p>
   </div>
 

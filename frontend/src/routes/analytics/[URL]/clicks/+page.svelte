@@ -276,6 +276,82 @@
       .attr("stroke-linecap", "round")
       .attr("d", line(yNums));
 
+    // ── Hover Tooltip ────────────────────────────────────────────────────────────────
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "chart-tooltip")
+      .style("position", "absolute")
+      .style("visibility", "hidden")
+      .style("background", "rgba(30, 41, 59, 0.95)")
+      .style("color", "#e2e8f0")
+      .style("padding", "8px 12px")
+      .style("border", "1px solid #475569")
+      .style("border-radius", "6px")
+      .style("font-size", "13px")
+      .style("pointer-events", "none")
+      .style("z-index", "1000")
+      .style("box-shadow", "0 4px 12px rgba(0,0,0,0.5)");
+
+    // Invisible overlay for hover detection (covers the whole chart area)
+    const overlay = g.append("rect")
+      .attr("width", innerWidth)
+      .attr("height", innerHeight)
+      .style("fill", "none")
+      .style("pointer-events", "all");
+
+    // Vertical line that follows mouse
+    const verticalLine = g.append("line")
+      .attr("class", "hover-line")
+      .attr("y1", 0)
+      .attr("y2", innerHeight)
+      .style("stroke", "#94a3b8")
+      .style("stroke-width", "1px")
+      .style("stroke-dasharray", "3,3")
+      .style("opacity", 0);
+
+    // Hover logic
+    overlay
+      .on("mouseover", () => {
+        tooltip.style("visibility", "visible");
+        verticalLine.style("opacity", 0.6);
+      })
+      .on("mouseout", () => {
+        tooltip.style("visibility", "hidden");
+        verticalLine.style("opacity", 0);
+      })
+      .on("mousemove", function(event) {
+        const mouseX = d3.pointer(event)[0];
+
+        // Find closest data point
+        const x0 = xScale.invert(mouseX);
+        const i = d3.bisectLeft(dates, x0);
+        const d0 = dates[i - 1];
+        const d1 = dates[i];
+        const d = x0 - d0 > d1 - x0 ? d1 : d0;
+        const index = dates.indexOf(d);
+
+        if (index === -1) return;
+
+        const date = d;
+        const clicks = yNums[index];
+
+        // Position vertical line
+        verticalLine
+          .attr("x1", xScale(date))
+          .attr("x2", xScale(date))
+          .style("opacity", 0.6);
+
+        // Tooltip content
+        const dateLabel = isHourly
+          ? d3.timeFormat("%Y-%m-%d %H:00")(date)
+          : d3.timeFormat("%Y-%m-%d")(date);
+
+        tooltip
+          .html(`<strong>${dateLabel}</strong><br>Clicks: ${clicks}`)
+          .style("left", (event.pageX + 15) + "px")
+          .style("top", (event.pageY - 40) + "px");
+      });
+
     // X Axis
     const tickCount = isHourly ? Math.min(12, dates.length) : Math.min(8, dates.length);
     const xAxis = d3.axisBottom(xScale)
@@ -398,5 +474,23 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  .chart-tooltip {
+    visibility: hidden;
+    background: rgba(30, 41, 59, 0.95);
+    color: #e2e8f0;
+    padding: 8px 12px;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    white-space: nowrap;
+  }
+
+  .hover-line {
+    pointer-events: none;
   }
 </style>

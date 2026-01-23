@@ -5,6 +5,7 @@ import json
 from datetime import datetime, timezone, timedelta
 from linkValidation import CheckURL
 import sqlite3
+from urllib.parse import urlencode
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -116,6 +117,10 @@ def addClick(token):
             DO UPDATE SET clicks = clicks + 1
         """, (token, date_str, hour))
 
+        cursor.execute("""
+            ALTER TABLE links ADD COLUMN affiliate_params TEXT DEFAULT '{}'
+        """)
+
         conn.commit()
     return True
 
@@ -133,23 +138,21 @@ def buttonClick():
 
     protector = LPE.Tokenize(url)
     token = protector.token
-    tokenized_url = protector.getTokenizedLink().replace(" ", "-")
+    tokenized_url = protector.getTokenizedLink()
     host = protector.getHost()
-    
+    base_url = protector.getBaseUrl()          # without params
+    params_json = json.dumps(protector.getParams())  # for storage
+
+    # Store encrypted or plain (your choice)
     with get_db() as conn:
         cursor = conn.cursor()
-
-        # Check if token already exists
-        cursor.execute("SELECT token FROM links WHERE token = ?", (token,))
-        if cursor.fetchone():
-            return jsonify({"message": "Token collision - try again", "error": 1})
-
         cursor.execute("""
-            INSERT INTO links (token, original_url, host, tokenized_url, last_id)
-            VALUES (?, ?, ?, ?, 
+            INSERT INTO links (token, original_url, host, tokenized_url, affiliate_params, last_id)
+            VALUES (?, ?, ?, ?, ?, 
                 (SELECT COALESCE(MAX(last_id), 0) + 1 FROM links)
             )
-        """, (token, url, host, tokenized_url))
+        """, (token, base_url, host, tokenized_url, params_json))
+        conn.commit()
 
         conn.commit()
     
@@ -167,16 +170,21 @@ def redirect302(host, token):
     # Get original URL
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT original_url FROM links WHERE token = ?", (token,))
+        cursor.execute("""
+            SELECT original_url, affiliate_params
+            FROM links WHERE token = ?
+        """, (token,))
         row = cursor.fetchone()
-        if not row:
-            abort(404)
-        redirect_url = row['original_url']
 
-    # Track click
+    base_url = row['original_url']
+    params = json.loads(row['affiliate_params'] or '{}')
+
+    # Rebuild full URL with params
+    query_string = urlencode(params, doseq=True)
+    full_url = base_url + ('?' + query_string if query_string else '')
+
     addClick(token)
-
-    return redirect(redirect_url, code=302)
+    return redirect(full_url, code=302)
 
 @app.post("/api/getUserUrls")
 def getUserUrls():
